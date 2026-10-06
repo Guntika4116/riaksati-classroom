@@ -1,0 +1,47 @@
+body {
+      font-family: 'Noto Sans Thai', system-ui, sans-serif;
+      background-color: #EDEAE1;
+      color: #1E2525;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #D9ECE9;
+      border-radius: 4px;
+    }
+    .app-viewport {
+      width: 390px;
+      height: 844px;
+      position: relative;
+      overflow: hidden;
+      background: #FAF9F5;
+      box-shadow: 0 25px 60px -15px rgba(27, 46, 44, 0.25), 0 0 0 1px rgba(0,0,0,0.06);
+    }
+    @media (max-width: 420px) {
+      .app-viewport {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+    .btn-press:active {
+      transform: scale(0.98);
+    }
+    .fade-in {
+      animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .bottom-sheet-up {
+      animation: sheetUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+@media (max-width: 420px) { .app-viewport { height: 100dvh; } }

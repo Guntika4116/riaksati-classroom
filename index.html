@@ -1,0 +1,762 @@
+<!DOCTYPE html><html lang="th"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เรียกสติ (Riek Sati) - Interactive Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script src="src/theme.js"></script>
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 sm:p-4 select-none">
+
+  <!-- Main Mobile Mockup Frame -->
+  <div class="app-viewport sm:rounded-[44px] flex flex-col relative" id="appRoot">
+
+    <div id="aiProgress" role="status" class="hidden fixed top-2 left-1/2 -translate-x-1/2 z-[70] bg-brand-700 text-white rounded-xl px-4 py-3 text-sm shadow-lg">AI กำลังจัดความคิด…</div>
+    <div id="aiError" role="alert" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-[70] bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-900 shadow-lg w-[min(90vw,360px)]">
+      <p id="aiErrorText"></p>
+      <div class="flex gap-4 mt-3"><button id="btnRetryAI" onclick="retrySend()" class="font-bold underline">ลองอีกครั้ง</button><button onclick="clearAIError()" class="underline">ปิด</button></div>
+    </div>
+    <!-- Top Status Bar & Header (Conditional) -->
+    <header id="appTopBar" class="flex-shrink-0 z-30 bg-[#FAF9F5]/95 backdrop-blur-sm px-5 pt-3 pb-2.5 border-b border-canvas-border flex items-center justify-between transition-all">
+      <!-- Left: Logo / Back -->
+      <div class="flex items-center space-x-2">
+        <button id="btnHeaderBack" onclick="goBack()" class="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-slateDark-700 hover:bg-canvas-subtle transition" aria-label="ย้อนกลับ">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <div class="flex items-center space-x-2" id="headerTitleArea">
+          <div class="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            สติ
+          </div>
+          <div>
+            <h1 class="text-base font-bold tracking-tight text-slateDark-900 leading-none" id="headerMainTitle">สรุปความคิด</h1>
+            <span class="text-[11px] text-brand-600 font-medium" id="headerSubtitle">ขั้นตอนที่ 1 จาก 2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Actions -->
+      <div class="flex items-center space-x-1">
+        <!-- Quick Prototype Route Switcher -->
+        <!-- Data Management Settings Icon -->
+        <button onclick="openDataSettings()" title="จัดการข้อมูลและความเป็นส่วนตัว" class="w-9 h-9 rounded-full flex items-center justify-center text-slateDark-600 hover:bg-canvas-subtle transition" aria-label="จัดการข้อมูล">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Simulated In-App Push Notification (For Reminder Demo) -->
+    <div id="simulatedNotification" class="absolute top-14 left-4 right-4 z-50 bg-white/95 backdrop-blur shadow-xl border border-brand-200 rounded-2xl p-3.5 flex items-start space-x-3 transition-all duration-300 transform -translate-y-28 opacity-0 pointer-events-none">
+      <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex-shrink-0 flex items-center justify-center font-bold text-xs mt-0.5">
+        สติ
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-brand-700">เตือนความจำจากเรียกสติ</span>
+          <span class="text-[10px] text-slateDark-400">ตอนนี้</span>
+        </div>
+        <p class="text-xs font-medium text-slateDark-800 mt-0.5 truncate" id="notifMessage">ถึงเวลาก้าวเล็ก ๆ: ส่งข้อความนัดเพื่อนเพื่อคุยแบ่งงาน 15 นาที</p>
+      </div>
+      <button onclick="dismissNotification(true)" class="text-xs text-brand-600 font-semibold px-2 py-1 bg-brand-50 rounded-lg">ดูแผน</button>
+    </div>
+
+    <!-- Screen Containers (Rendered Viewport) -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar relative flex flex-col" id="screenContainer">
+
+      <!-- ================= 1. ONBOARDING / WELCOME SCREEN ================= -->
+      <section id="screen-welcome" class="screen-view flex-1 flex flex-col justify-between p-6 fade-in hidden overflow-y-auto">
+        <div class="space-y-6 pt-4">
+          <!-- Logo & Badges -->
+          <div>
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-peach-100 border border-peach-200 text-peach-500 text-xs font-medium mb-4">
+              <span class="w-1.5 h-1.5 rounded-full bg-peach-500 animate-pulse"></span>
+              <span class="">ต้นแบบสำหรับทดลอง กรุณาใช้เรื่องสมมติ</span>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-xl font-bold shadow-md shadow-brand-500/20">
+                สติ
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-slateDark-900 tracking-tight">เรียกสติ</h2>
+                <p class="text-xs text-brand-600 font-medium">คุยกับ AI เพื่อช่วยจัดความคิด</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Headline & Description -->
+          <div class="bg-white rounded-3xl p-6 border border-canvas-border shadow-sm space-y-3">
+            <h3 class="text-xl font-bold text-slateDark-900 leading-snug">
+              มีหลายเรื่องอยู่ในหัว<br><span class="text-brand-600 font-semibold">ค่อย ๆ เล่าทีละเรื่องก็ได้</span>
+            </h3>
+            <p class="text-sm text-slateDark-600 leading-relaxed">
+              พื้นที่ทดลองให้คุณเล่าเรื่องสมมติ เรียบเรียงสิ่งที่พัวพันในใจ และเลือกก้าวเล็ก ๆ หนึ่งก้าวที่เหมาะกับกำลังตัวเองในวันนี้
+            </p>
+            <div class="pt-2 border-t border-canvas-subtle flex items-center space-x-2 text-xs text-slateDark-600">
+              <svg class="w-4 h-4 text-brand-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              <span class="">ไม่ตัดสิน • ไม่เร่งรัด • ไม่ต้องมีบัญชีหรือล็อกอิน</span>
+            </div>
+          </div>
+
+          <!-- Calm Privacy Notice -->
+          <div class="bg-brand-50/70 rounded-2xl p-4 border border-brand-100 flex items-start space-x-3">
+            <svg class="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <div class="text-xs text-slateDark-700 leading-relaxed">
+              <span class="font-semibold text-brand-700">ความเป็นส่วนตัวของคุณ:</span> ข้อความจะส่งให้ Google Gemini ประมวลผล บริการฟรีอาจใช้ข้อความปรับปรุงผลิตภัณฑ์ กรุณาใช้เรื่องสมมติ ไม่ใส่ชื่อจริงหรือข้อมูลอ่อนไหว สรุปและแผนที่เลือกเก็บอยู่เฉพาะหน้านี้ รีเฟรชแล้วหาย
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="pt-6 pb-2 space-y-3">
+          <label for="classroomCode" class="block text-xs font-semibold">รหัสผู้ทดลอง</label>
+          <input id="classroomCode" type="password" autocomplete="off" maxlength="200" placeholder="ใส่รหัสที่ผู้จัดให้มา" class="w-full rounded-xl border border-canvas-border p-3 text-sm">
+          <label class="flex items-start gap-2 text-xs leading-relaxed"><input id="trialConsent" type="checkbox" class="mt-1">ฉันอายุ 18 ปีขึ้นไป รับทราบการส่งข้อความให้ Google และจะใช้เรื่องสมมติในการทดลอง</label>
+          <p id="connectionStatus" role="status" class="text-xs text-brand-700">กำลังตรวจการเชื่อมต่อ…</p>
+          <button onclick="checkConnection()" class="text-xs text-brand-600 underline">ตรวจการเชื่อมต่ออีกครั้ง</button>
+          <button id="btnStartChat" disabled onclick="startClassroomChat()" class="btn-press w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-medium text-base shadow-sm shadow-brand-700/20 flex items-center justify-center space-x-2 transition">
+            <span class="">เริ่มเล่า</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </button>
+          
+          <button onclick="openDataSettings()" class="w-full text-center py-2 text-xs font-medium text-slateDark-600 hover:text-brand-700 transition">
+            ข้อมูลของฉันถูกเก็บอย่างไร?
+          </button>
+        </div>
+      </section>
+
+
+      <!-- ================= 2. CHAT SCREEN (CONVERSATION & STATE) ================= -->
+      <section id="screen-chat" class="screen-view flex-1 flex flex-col justify-between h-full fade-in">
+        <!-- Chat History Scrollable Area -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" id="chatMessageList">
+          <!-- Initial AI Welcome Bubble -->
+          <div class="flex items-start space-x-2.5 max-w-[88%]">
+            <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex-shrink-0 flex items-center justify-center text-xs font-bold shadow-sm">
+              สติ
+            </div>
+            <div class="space-y-1.5">
+              <div class="bg-white rounded-2xl rounded-tl-sm p-4 border border-canvas-border shadow-xs text-[15px] leading-relaxed text-slateDark-900">
+                วันนี้มีเรื่องไหนอยู่ในหัวบ้าง? เล่าแบบยังไม่เป็นระเบียบก็ได้นะ ค่อย ๆ คลายออกมาทีละนิด
+              </div>
+              <span class="text-[11px] text-slateDark-400 pl-1">เรียกสติ • AI ช่วยจัดความคิด</span>
+            </div>
+          </div>
+
+          <!-- Starter Prompt Chips (Initial State) -->
+          <div id="chatQuickStarters" class="pl-10 space-y-2 pt-1 hidden">
+            <p class="text-xs text-slateDark-600 font-medium">กดเพื่อเริ่มเล่า หรือพิมพ์เองด้านล่าง:</p>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="triggerQuickChat('มีหลายเรื่องพร้อมกัน')" class="btn-press text-xs font-medium px-3.5 py-2 rounded-xl bg-white border border-brand-200 text-brand-700 hover:bg-brand-50 transition shadow-xs min-h-[44px]">
+                “มีหลายเรื่องพร้อมกัน”
+              </button>
+              <button onclick="triggerQuickChat('ไม่รู้จะเริ่มตรงไหน')" class="btn-press text-xs font-medium px-3.5 py-2 rounded-xl bg-white border border-brand-200 text-brand-700 hover:bg-brand-50 transition shadow-xs min-h-[44px]">
+                “ไม่รู้จะเริ่มตรงไหน”
+              </button>
+              <button onclick="triggerQuickChat('อยากระบายก่อน')" class="btn-press text-xs font-medium px-3.5 py-2 rounded-xl bg-white border border-brand-200 text-brand-700 hover:bg-brand-50 transition shadow-xs min-h-[44px]">
+                “อยากระบายก่อน”
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Chat Message Insertion Point -->
+          <div id="chatDynamicTurns" class="space-y-4"></div>
+
+
+          <!-- AI Typing Indicator (Hidden by default) -->
+          <div id="aiTypingIndicator" class="flex items-center space-x-2 pl-10 hidden">
+            <div class="bg-white rounded-2xl px-4 py-2.5 border border-canvas-border shadow-xs flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-brand-500 animate-bounce"></span>
+              <span class="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style="animation-delay: 0.15s"></span>
+              <span class="w-2 h-2 rounded-full bg-brand-500 animate-bounce" style="animation-delay: 0.3s"></span>
+              <span class="text-xs text-slateDark-600 ml-1">กำลังอ่านและจัดความคิด...</span>
+            </div>
+          </div>
+
+          <!-- Action Prompt: When Ready to Summarize -->
+          <div id="chatSummarizePrompt" class="hidden bg-peach-50 border border-peach-200 rounded-2xl p-4 space-y-3 fade-in mt-4">
+            <div class="flex items-start space-x-2">
+              <div class="w-5 h-5 rounded-full bg-peach-200 text-peach-500 flex items-center justify-center flex-shrink-0 text-xs font-bold">✓</div>
+              <p class="text-xs text-slateDark-800 leading-relaxed">
+                อยากให้ช่วยสรุปสิ่งที่คุยกันตอนนี้ หรืออยากเล่าเพิ่มเติมก่อน?
+              </p>
+            </div>
+            <div class="flex items-center space-x-2 pt-1">
+              <button id="btnSummarize" onclick="summarizeChat()" class="btn-press flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center space-x-1.5 transition">
+                <span class="">ช่วยสรุปให้หน่อย</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+              <button onclick="chatTellMore()" class="btn-press min-h-[44px] px-4 py-2.5 rounded-xl bg-white border border-canvas-border hover:bg-canvas-subtle text-slateDark-700 text-xs font-medium transition">
+                ขอเล่าต่อ
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Bar (Adhering to: no microphone, no attachments, 44px+ touch targets) -->
+        <div class="p-3 bg-white border-t border-canvas-border flex-shrink-0 space-y-2">
+          <form onsubmit="handleChatSubmit(event)" class="flex items-center space-x-2">
+            <div class="flex-1 relative">
+              <input type="text" id="chatInputBox" maxlength="1200" aria-label="ข้อความที่จะส่งให้ AI" placeholder="พิมพ์เรื่องที่อยากเล่า…" class="w-full h-11 pl-4 pr-10 text-[15px] bg-canvas-base border border-canvas-border rounded-xl focus:outline-none focus:border-brand-600 focus:bg-white text-slateDark-900 transition">
+              <!-- Clear button inside input -->
+              <button type="button" onclick="clearInput()" id="btnClearInput" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slateDark-400 hover:text-slateDark-600 hidden">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <!-- Send button -->
+            <button type="submit" id="btnChatSend" class="btn-press w-11 h-11 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-95 text-white flex items-center justify-center transition shadow-xs flex-shrink-0" aria-label="ส่งข้อความ">
+              <svg class="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0l-7 7m7-7l7 7"></path></svg>
+            </button>
+          </form>
+          <div class="flex justify-between items-center px-1">
+            <span id="chatInputHint" class="text-[11px] text-slateDark-600">0/8 ข้อความ • ใช้เรื่องสมมติเท่านั้น</span>
+            <button id="btnNewChat" onclick="startNewChat()" class="text-xs text-brand-600 underline">เริ่มคุยใหม่</button>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ================= 3. SUMMARY & SELECT ISSUE SCREEN ================= -->
+      <section id="screen-summary" class="screen-view flex-1 flex flex-col justify-between p-5 fade-in overflow-y-auto">
+        <div class="space-y-5">
+          <!-- Step indicator & Heading -->
+          <div>
+            <div class="flex items-center space-x-1.5 text-xs text-brand-600 font-semibold mb-1">
+              <span class="">ขั้นตอนที่ 1 จาก 2</span>
+              <span class="">•</span>
+              <span class="">ตรวจและเรียงลำดับ</span>
+            </div>
+            <h2 class="text-xl font-bold text-slateDark-900">ลองเรียบเรียงสิ่งที่อยู่ในหัว</h2>
+            <p class="text-xs text-slateDark-600 mt-0.5">ตรวจดูว่าสิ่งที่สรุปตรงกับที่คุณรู้สึกหรือไม่ แก้ไขได้ตลอดเวลา</p>
+          </div>
+
+          <!-- Section 1: Concerns Identified -->
+          <div class="bg-white rounded-2xl p-4 border border-canvas-border shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-brand-700">เรื่องที่คุณกำลังกังวล</span>
+              <button onclick="toggleEditSummaryModal()" class="text-xs font-medium text-brand-600 hover:underline flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                <span class="">แก้ไขสรุป</span>
+              </button>
+            </div>
+
+            <ul class="space-y-2 text-sm text-slateDark-800" id="summaryListDisplay">
+              <li class="flex items-start space-x-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 mt-2 flex-shrink-0"></span>
+                <span id="concern1Text" class="">โปรเจกต์กลุ่มใกล้ส่งและยังแบ่งงานไม่ชัด</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 mt-2 flex-shrink-0"></span>
+                <span id="concern2Text" class="">ต้องเตรียมสอบสัปดาห์หน้า</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 mt-2 flex-shrink-0"></span>
+                <span id="concern3Text" class="">ยังไม่ได้เริ่มหาที่ฝึกงาน</span>
+              </li>
+            </ul>
+
+            <!-- Section 2: Emotion / Feeling -->
+            <div class="pt-3 border-t border-canvas-subtle">
+              <span class="text-xs font-semibold text-slateDark-600 block mb-1">ความรู้สึกที่คุณเล่า:</span>
+              <p class="text-sm text-slateDark-800 bg-canvas-base rounded-xl p-3 border border-canvas-border/60" id="emotionTextDisplay">
+                “รู้สึกเร่งรีบและไม่รู้จะเริ่มตรงไหน”
+              </p>
+            </div>
+          </div>
+
+          <!-- Section 3: Pick ONE Issue to focus first (Not pre-selected) -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slateDark-900">อยากเริ่มจากเรื่องไหนก่อน?</h3>
+              <span class="text-[11px] text-slateDark-600">เลือกได้ 1 เรื่อง</span>
+            </div>
+            <p class="text-xs text-slateDark-600">เราไม่ต้องแก้ทุกเรื่องพร้อมกันตอนนี้ เลือกแค่จุดที่อยากคลายก่อน</p>
+
+            <div class="space-y-2.5 pt-1" id="issueCardContainer">
+              <!-- Issue Card 1 -->
+              <div onclick="selectIssue('project', this)" class="issue-card btn-press p-4 rounded-2xl bg-white border-2 hover:border-brand-200 transition cursor-pointer flex items-center justify-between border-brand-600 bg-brand-50/40">
+                <div class="flex items-center space-x-3">
+                  <div class="radio-indicator w-5 h-5 rounded-full border-2 flex items-center justify-center border-brand-600">
+                    <div class="w-2.5 h-2.5 rounded-full bg-brand-600 check-dot"></div>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-slateDark-900">โปรเจกต์กลุ่ม</h4>
+                    <p class="text-xs text-slateDark-600 mt-0.5">ส่งวันศุกร์นี้ • ยังค้างแบ่งหน้าที่</p>
+                  </div>
+                </div>
+                <span class="text-[11px] px-2 py-0.5 rounded-md bg-peach-100 text-peach-500 font-medium">เดดไลน์ใกล้สุด</span>
+              </div>
+
+              <!-- Issue Card 2 -->
+              <div onclick="selectIssue('exam', this)" class="issue-card btn-press p-4 rounded-2xl bg-white border-2 border-canvas-border hover:border-brand-200 transition cursor-pointer flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slateDark-300 flex items-center justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-brand-600 hidden check-dot"></div>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-slateDark-900">เตรียมสอบสัปดาห์หน้า</h4>
+                    <p class="text-xs text-slateDark-600 mt-0.5">มีเวลาอีก 7 วัน</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Issue Card 3 -->
+              <div onclick="selectIssue('internship', this)" class="issue-card btn-press p-4 rounded-2xl bg-white border-2 border-canvas-border hover:border-brand-200 transition cursor-pointer flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slateDark-300 flex items-center justify-center">
+                    <div class="w-2.5 h-2.5 rounded-full bg-brand-600 hidden check-dot"></div>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-slateDark-900">หาที่ฝึกงาน</h4>
+                    <p class="text-xs text-slateDark-600 mt-0.5">ยังไม่เริ่มเรซูเม่</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Bottom Actions -->
+        <div class="pt-6 pb-2 space-y-2.5">
+          <!-- Primary action (Requires issue selection, disabled until clicked) -->
+          <button id="btnProceedToPlan" disabled onclick="proceedToPlanScreen()" class="btn-press w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-brand-600 text-white font-medium text-sm shadow-sm transition flex items-center justify-center space-x-2 disabled:opacity-40 disabled:pointer-events-none">
+            <span class="">คิดก้าวเล็ก ๆ จากเรื่องนี้</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </button>
+
+          <!-- Alternative path B: Just want summary today -->
+          <button onclick="skipToSaveBottomSheet(true)" class="btn-press w-full min-h-[44px] py-2.5 text-center text-xs font-semibold text-slateDark-600 hover:text-brand-700 transition">
+            วันนี้ขอแค่สรุป (ข้ามการวางแผน)
+          </button>
+        </div>
+      </section>
+
+
+      <!-- ================= 4. SELECT ONE TINY PLAN SCREEN ================= -->
+      <section id="screen-plan" class="screen-view flex-1 flex flex-col justify-between p-5 fade-in overflow-y-auto hidden">
+        <div class="space-y-5">
+          <!-- Step indicator & Heading -->
+          <div>
+            <div class="flex items-center space-x-1.5 text-xs text-brand-600 font-semibold mb-1">
+              <span class="">ขั้นตอนที่ 2 จาก 2</span>
+              <span class="">•</span>
+              <span id="planTargetLabel" class="">เรื่อง: โปรเจกต์กลุ่ม</span>
+            </div>
+            <h2 class="text-xl font-bold text-slateDark-900">เริ่มจากก้าวเล็ก ๆ ที่ไหว</h2>
+            <p class="text-xs text-slateDark-600 mt-0.5">เลือกแผนเล็ก ๆ หนึ่งข้อเพื่อเริ่มลงมือ ไม่ต้องทำหมดทุกอย่าง</p>
+          </div>
+
+          <!-- Micro Plans (Max 3 realistic items) -->
+          <div class="space-y-3" id="planCardsList">
+            <!-- Plan 1 -->
+            <div onclick="selectPlan(1, 'ส่งข้อความนัดเพื่อนเพื่อคุยแบ่งงาน 15 นาที', this)" class="plan-card btn-press p-4 rounded-2xl bg-white border-2 hover:border-brand-200 transition cursor-pointer border-brand-600 bg-brand-50/50">
+              <div class="flex items-start space-x-3">
+                <div class="radio-indicator w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 border-brand-600">
+                  <div class="w-2.5 h-2.5 rounded-full bg-brand-600 check-dot"></div>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-slateDark-900 leading-snug">
+                    ส่งข้อความนัดเพื่อนเพื่อคุยแบ่งงาน 15 นาที
+                  </p>
+                  <span class="inline-block mt-1.5 text-[11px] text-brand-700 font-medium bg-brand-50 px-2 py-0.5 rounded-md">
+                    ใช้เวลาประมาณ 2 นาที
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Plan 2 -->
+            <div onclick="selectPlan(2, 'จดรายการงานที่ยังเหลือก่อนคุยกับกลุ่ม', this)" class="plan-card btn-press p-4 rounded-2xl bg-white border-2 border-canvas-border hover:border-brand-200 transition cursor-pointer">
+              <div class="flex items-start space-x-3">
+                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slateDark-300 flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <div class="w-2.5 h-2.5 rounded-full bg-brand-600 hidden check-dot"></div>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-slateDark-900 leading-snug">
+                    จดรายการงานที่ยังเหลือก่อนคุยกับกลุ่ม
+                  </p>
+                  <span class="inline-block mt-1.5 text-[11px] text-slateDark-600 font-medium bg-canvas-subtle px-2 py-0.5 rounded-md">
+                    ช่วยให้เห็นขอบเขตชัดขึ้น
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Plan 3 -->
+            <div onclick="selectPlan(3, 'ร่างข้อความถามว่าแต่ละคนสะดวกรับส่วนไหน', this)" class="plan-card btn-press p-4 rounded-2xl bg-white border-2 border-canvas-border hover:border-brand-200 transition cursor-pointer">
+              <div class="flex items-start space-x-3">
+                <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slateDark-300 flex items-center justify-center mt-0.5 flex-shrink-0">
+                  <div class="w-2.5 h-2.5 rounded-full bg-brand-600 hidden check-dot"></div>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-slateDark-900 leading-snug">
+                    ร่างข้อความถามว่าแต่ละคนสะดวกรับส่วนไหน
+                  </p>
+                  <span class="inline-block mt-1.5 text-[11px] text-slateDark-600 font-medium bg-canvas-subtle px-2 py-0.5 rounded-md">
+                    เริ่มคุยแบบไม่กดดัน
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Plan Option / Edit Selected Plan -->
+          <div class="bg-white rounded-2xl p-3.5 border border-canvas-border space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-slateDark-700 flex items-center space-x-1">
+                <span class="">เขียนหรือแก้ไขแผนของฉันเอง</span>
+              </label>
+              <button onclick="focusCustomPlan()" class="text-xs text-brand-600 hover:underline">แก้ไข</button>
+            </div>
+            <input type="text" id="customPlanInput" maxlength="500" placeholder="หรือพิมพ์แผนเล็ก ๆ ที่คุณอยากทำเอง..." oninput="handleCustomPlanInput(this.value)" class="w-full text-xs p-2.5 bg-canvas-base border border-canvas-border rounded-xl focus:outline-none focus:border-brand-600 focus:bg-white text-slateDark-900">
+          </div>
+
+          <!-- Optional Timing (Non-mandatory) -->
+          <div class="space-y-2">
+            <span class="text-xs font-semibold text-slateDark-700 block">อยากเริ่มเมื่อไหร่? (ไม่บังคับ)</span>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="selectPlanTiming('วันนี้', this)" class="timing-btn btn-press min-h-[44px] text-xs font-medium py-2.5 rounded-xl border border-canvas-border bg-white text-slateDark-700 hover:border-brand-300 transition">
+                วันนี้
+              </button>
+              <button type="button" onclick="selectPlanTiming('พรุ่งนี้', this)" class="timing-btn btn-press min-h-[44px] text-xs font-medium py-2.5 rounded-xl border-2 border-brand-600 bg-brand-50 text-brand-700 transition font-bold">
+                พรุ่งนี้
+              </button>
+              <button type="button" onclick="selectPlanTiming('ยังไม่กำหนด', this)" class="timing-btn btn-press min-h-[44px] text-xs font-medium py-2.5 rounded-xl border border-canvas-border bg-white text-slateDark-700 hover:border-brand-300 transition">
+                ยังไม่กำหนด
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Bottom Actions -->
+        <div class="pt-6 pb-2 space-y-2.5">
+          <!-- Primary action: Use this plan -->
+          <button id="btnConfirmPlan" disabled onclick="openSaveSheetWithPlan()" class="btn-press w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-brand-600 text-white font-medium text-sm shadow-sm transition flex items-center justify-center space-x-2 disabled:opacity-40 disabled:pointer-events-none">
+            <span class="">ใช้แผนนี้</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          </button>
+
+          <!-- Path C: Don't want a plan right now -->
+          <button onclick="skipToSaveBottomSheet(false)" class="btn-press w-full min-h-[44px] py-2.5 text-center text-xs font-semibold text-slateDark-600 hover:text-brand-700 transition">
+            ยังไม่อยากทำแผน
+          </button>
+        </div>
+      </section>
+
+
+      <!-- ================= 5. MY PLANS SCREEN (ACTIVE TAB) ================= -->
+      <section id="screen-myplans" class="screen-view flex-1 flex flex-col p-5 fade-in overflow-y-auto hidden">
+        <!-- Header area within tab -->
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-slateDark-900">แผนของฉัน</h2>
+            <p class="text-xs text-slateDark-600 mt-0.5">รายการที่คุณเลือกเก็บไว้กลับมาดู</p>
+          </div>
+          <span id="badgeActiveCount" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-100 text-brand-700">2 รายการ</span>
+        </div>
+
+        <!-- Plans & Saved Summaries List Container -->
+        <div id="plansListContainer" class="space-y-3.5 pb-6"></div>
+
+
+        <!-- Empty State (Shown when no items saved or all deleted) -->
+        <div id="plansEmptyState" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center my-auto space-y-4">
+          <div class="w-16 h-16 rounded-full bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-bold text-slateDark-900">ยังไม่มีเรื่องที่บันทึกไว้</h3>
+            <p class="text-xs text-slateDark-600 max-w-[240px] mx-auto leading-relaxed">
+              เมื่อคุณเลือกเก็บสรุปหรือแผน จะกลับมาเปิดดูและอัปเดตได้ที่นี่
+            </p>
+          </div>
+          <button onclick="navigateTo('chat')" class="btn-press min-h-[44px] px-6 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold shadow-xs">
+            เริ่มคุย
+          </button>
+        </div>
+      </section>
+
+
+      <!-- ================= 6. UPDATE PLAN SCREEN ================= -->
+      <section id="screen-update" class="screen-view flex-1 flex flex-col justify-between p-5 hidden fade-in overflow-y-auto">
+        <div class="space-y-5">
+          <!-- Heading & Plan Context -->
+          <div>
+            <div class="flex items-center space-x-1 text-xs text-brand-600 font-semibold mb-1">
+              <span class="">อัปเดตความคืบหน้า</span>
+            </div>
+            <h2 class="text-xl font-bold text-slateDark-900">เรื่องนี้เป็นอย่างไรบ้าง?</h2>
+            <p class="text-xs text-slateDark-600 mt-0.5">ตอบตามจริงได้เลย ไม่ต้องกดดันตัวเอง</p>
+          </div>
+
+          <!-- Existing Plan Banner -->
+          <div class="bg-white rounded-2xl p-4 border border-canvas-border shadow-xs space-y-1.5">
+            <span class="text-[11px] font-bold text-brand-700 uppercase tracking-wide" id="updatePlanTopic">โปรเจกต์กลุ่ม</span>
+            <p class="text-sm font-semibold text-slateDark-900" id="updatePlanText">
+              ส่งข้อความนัดเพื่อนเพื่อคุยแบ่งงาน 15 นาที
+            </p>
+            <div class="text-[11px] text-slateDark-400 pt-1" id="updatePlanDate">บันทึกเมื่อ: วันนี้</div>
+          </div>
+
+          <!-- Status Selector (3 Choices: ยังไม่ได้ทำ, กำลังทำ, ทำแล้ว) -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slateDark-700 block">สถานะตอนนี้:</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="setUpdateStatus('not_started', this)" id="statusBtn_not_started" class="update-status-btn btn-press min-h-[44px] p-2.5 rounded-xl border-2 border-peach-400 bg-peach-50 text-peach-500 font-bold text-xs transition">
+                ยังไม่ได้ทำ
+              </button>
+              <button type="button" onclick="setUpdateStatus('in_progress', this)" id="statusBtn_in_progress" class="update-status-btn btn-press min-h-[44px] p-2.5 rounded-xl border border-canvas-border bg-white text-slateDark-700 font-medium text-xs transition">
+                กำลังทำ
+              </button>
+              <button type="button" onclick="setUpdateStatus('completed', this)" id="statusBtn_completed" class="update-status-btn btn-press min-h-[44px] p-2.5 rounded-xl border border-canvas-border bg-white text-slateDark-700 font-medium text-xs transition">
+                ทำแล้ว
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Adaptive Feedback Area Based on Status -->
+          <div id="updateStatusContextArea" class="bg-canvas-subtle/80 rounded-2xl p-4 border border-canvas-border space-y-3">
+            <!-- Rendered via JS -->
+          </div>
+
+          <!-- Optional Reflection Note -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slateDark-700 block" id="updateNoteLabel">มีอะไรอยากบันทึกเพิ่มไหม? (ไม่บังคับ)</label>
+            <textarea id="updateNoteInput" maxlength="1200" rows="3" placeholder="เขียนสั้น ๆ ตามความรู้สึกตอนทำได้เลย..." class="w-full text-xs p-3 bg-white border border-canvas-border rounded-xl focus:outline-none focus:border-brand-600 text-slateDark-900"></textarea>
+          </div>
+        </div>
+
+        <!-- Sticky Bottom Actions -->
+        <div class="pt-6 pb-2 space-y-2">
+          <button onclick="savePlanUpdate()" class="btn-press w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm shadow-sm transition flex items-center justify-center space-x-2">
+            <span class="">บันทึกการอัปเดต</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          </button>
+          <button onclick="navigateTo('myplans')" class="w-full text-center py-2 text-xs font-medium text-slateDark-600 hover:text-slateDark-900 transition">
+            ยกเลิก
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+
+    <!-- ================= PERSISTENT BOTTOM NAVIGATION (2 MAIN TABS) ================= -->
+    <nav id="appBottomNav" class="flex-shrink-0 z-30 bg-white border-t border-canvas-border px-6 py-2 flex items-center justify-around">
+      <!-- Tab 1: คุยกับเรียกสติ -->
+      <button onclick="switchTab('chat')" id="navTabChat" class="btn-press flex-1 min-h-[48px] flex flex-col items-center justify-center space-y-1 text-brand-600 transition" aria-label="คุยกับเรียกสติ">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+        <span class="text-xs font-bold tracking-tight">คุยกับเรียกสติ</span>
+      </button>
+
+      <!-- Tab 2: แผนของฉัน -->
+      <button onclick="switchTab('myplans')" id="navTabPlans" class="btn-press flex-1 min-h-[48px] flex flex-col items-center justify-center space-y-1 text-slateDark-400 hover:text-slateDark-700 transition relative" aria-label="แผนของฉัน">
+        <div class="relative">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+          <span id="navPlanBadge" class="absolute -top-1 -right-2 w-2 h-2 rounded-full bg-peach-500"></span>
+        </div>
+        <span class="text-xs font-medium tracking-tight">แผนของฉัน</span>
+      </button>
+    </nav>
+
+
+    <!-- ================= BOTTOM SHEET: SAVE & REMINDER PREFERENCE ================= -->
+    <div id="saveSheetModal" class="hidden fixed inset-0 z-50 bg-slateDark-900/60 backdrop-blur-xs flex items-end justify-center" onclick="handleBackdropClick(event, 'saveSheetModal')">
+      <div class="w-full max-w-[390px] bg-white rounded-t-[32px] p-6 space-y-5 border-t border-canvas-border bottom-sheet-up shadow-2xl">
+        <div class="w-12 h-1 bg-slateDark-200 rounded-full mx-auto"></div>
+
+        <div>
+          <h3 class="text-lg font-bold text-slateDark-900">อยากเก็บอะไรไว้กลับมาดู?</h3>
+          <p class="text-xs text-slateDark-600 mt-0.5" id="saveSheetSubtitle">เลือกได้ตามที่คุณสบายใจ เราไม่บันทึกอัตโนมัติ</p>
+        </div>
+
+        <!-- Radio Options for Saving -->
+        <div class="space-y-3" id="saveOptionsGroup">
+          <!-- Option A: Save Summary & Plan (or Save Summary only) -->
+          <div onclick="selectSaveChoice('save_all', this)" id="optSaveChoice_all" class="btn-press p-3.5 rounded-2xl border-2 border-brand-600 bg-brand-50/60 cursor-pointer flex items-start space-x-3 transition">
+            <div class="radio-indicator w-5 h-5 rounded-full border-2 border-brand-600 flex items-center justify-center mt-0.5 flex-shrink-0">
+              <div class="w-2.5 h-2.5 rounded-full bg-brand-600"></div>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slateDark-900" id="labelOptionSaveAll">บันทึกเฉพาะสรุป</h4>
+              <p id="saveOptionDescription" class="text-xs text-slateDark-600 mt-0.5 leading-relaxed">เก็บสรุปไว้ในหน้านี้จนกว่าจะรีเฟรช</p>
+            </div>
+          </div>
+
+          <!-- Option B: Do Not Save -->
+          <div onclick="selectSaveChoice('no_save', this)" id="optSaveChoice_none" class="btn-press p-3.5 rounded-2xl border-2 border-canvas-border bg-white cursor-pointer flex items-start space-x-3 transition">
+            <div class="radio-indicator w-5 h-5 rounded-full border-2 border-slateDark-300 flex items-center justify-center mt-0.5 flex-shrink-0">
+              <div class="w-2.5 h-2.5 rounded-full bg-brand-600 hidden check-dot"></div>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slateDark-900">ไม่บันทึก</h4>
+              <p class="text-xs text-slateDark-600 mt-0.5 leading-relaxed">
+                สรุปและแผนครั้งนี้จะไม่ปรากฏในรายการของคุณ และจะไม่สามารถกลับมาอัปเดตได้
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 24-hr Reminder Toggle (Only shown when saving plan) -->
+        <div id="reminderSection" style="display:none" class="p-4 rounded-2xl bg-canvas-base border border-canvas-border flex items-center justify-between transition hidden">
+          <div class="pr-3">
+            <div class="text-xs font-bold text-slateDark-900">เตือนฉันอีกครั้งใน 24 ชั่วโมง</div>
+            <p class="text-[11px] text-slateDark-600 mt-0.5">เตือนเพียงครั้งเดียว และปิดได้ภายหลัง</p>
+          </div>
+          <!-- Toggle switch (Default OFF) -->
+          <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="reminderToggle" onchange="handleReminderToggle(this.checked)" class="sr-only peer">
+            <div class="w-11 h-6 bg-slateDark-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+          </label>
+        </div>
+
+        <!-- Finish Button with dynamic label -->
+        <div class="space-y-2 pt-2">
+          <button id="btnCompleteSession" onclick="commitSaveAndFinish()" class="btn-press w-full min-h-[48px] py-3.5 px-6 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm shadow-sm transition">บันทึกและจบการคุย</button>
+          <button onclick="closeSaveSheet()" class="w-full text-center py-2 text-xs font-medium text-slateDark-600 hover:text-slateDark-900 transition">
+            ย้อนกลับไปแก้ไข
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SESSION FINISH NEUTRAL POPUP / TOAST ================= -->
+    <div id="finishModal" class="fixed inset-0 z-50 bg-slateDark-900/60 backdrop-blur-xs flex items-center justify-center p-6 hidden">
+      <div class="w-full max-w-[340px] bg-white rounded-3xl p-6 text-center space-y-4 shadow-2xl border border-canvas-border fade-in">
+        <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto text-xl font-bold">
+          สติ
+        </div>
+        <div class="space-y-1.5">
+          <h3 class="text-base font-bold text-slateDark-900">เรียบร้อยแล้ว</h3>
+          <!-- Neutral reassuring copy (as specified: no exaggerated praise or clinical claim) -->
+          <p class="text-xs text-slateDark-600 leading-relaxed">
+            “วันนี้ค่อย ๆ ไปเท่าที่ไหวก็พอ”
+          </p>
+        </div>
+        <button onclick="dismissFinishModal()" class="btn-press w-full min-h-[44px] py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold">
+          ไปที่แผนของฉัน
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ================= DATA MANAGEMENT & PRIVACY PANEL ================= -->
+    <div id="dataSettingsModal" class="fixed inset-0 z-50 bg-slateDark-900/60 backdrop-blur-xs flex items-end justify-center hidden" onclick="handleBackdropClick(event, 'dataSettingsModal')">
+      <div class="w-full max-w-[390px] max-h-[85vh] bg-white rounded-t-[32px] p-6 space-y-5 border-t border-canvas-border bottom-sheet-up overflow-y-auto custom-scrollbar">
+        <div class="w-12 h-1 bg-slateDark-200 rounded-full mx-auto"></div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-slateDark-900">การจัดการข้อมูล</h3>
+            <p class="text-xs text-slateDark-600 mt-0.5">โปร่งใส และอยู่ในการควบคุมของคุณ</p>
+          </div>
+          <button onclick="closeDataSettings()" class="w-8 h-8 rounded-full flex items-center justify-center text-slateDark-400 hover:text-slateDark-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <div class="bg-canvas-base rounded-2xl p-4 border border-canvas-border text-xs text-slateDark-700 leading-relaxed space-y-2">
+          <p class="font-medium text-slateDark-900">สิ่งที่คุณเปิดดูย้อนหลังได้:</p>
+          <p class="">• สรุป แผน และบันทึกอยู่ในหน่วยความจำหน้านี้ รีเฟรชหรือปิดหน้าแล้วหาย</p>
+          <p class="">• ข้อความแชตส่งให้ Google Gemini ประมวลผล บริการฟรีอาจนำไปปรับปรุงผลิตภัณฑ์</p>
+          <p class="">• ลบรายการได้ทุกเมื่อ การลบในแอปไม่ได้ลบข้อมูลที่ส่งให้ Google ไปแล้ว</p>
+        </div>
+
+        <!-- Active Notification Management -->
+        <div class="bg-white rounded-2xl p-4 border border-canvas-border space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slateDark-900">การแจ้งเตือน</h4>
+              <p class="text-[11px] text-slateDark-600" id="dataNotifStatusText">รุ่นทดลองยังไม่มีการแจ้งเตือนจริง</p>
+            </div>
+            <button onclick="cancelAllReminders()" id="btnCancelNotifs" style="display:none" class="text-xs font-semibold text-rose-600 hover:underline">
+              ปิดการเตือนทั้งหมด
+            </button>
+          </div>
+        </div>
+
+        <!-- Saved Items Management & Delete -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-bold text-slateDark-900">รายการที่เก็บชั่วคราวในหน้านี้</h4>
+          <div id="dataSavedItemsList" class="space-y-2">
+            <!-- Dynamic items list with delete action -->
+          </div>
+        </div>
+
+        <button onclick="closeDataSettings()" class="btn-press w-full min-h-[44px] py-2.5 rounded-xl bg-slateDark-800 text-white text-xs font-semibold">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ================= EDIT SUMMARY MODAL ================= -->
+    <div id="editSummaryModal" class="fixed inset-0 z-50 bg-slateDark-900/60 backdrop-blur-xs flex items-center justify-center p-5 hidden">
+      <div class="w-full max-w-[350px] bg-white rounded-3xl p-5 space-y-4 shadow-xl border border-canvas-border">
+        <h3 class="text-base font-bold text-slateDark-900">แก้ไขสรุปความกังวล</h3>
+        <div class="space-y-2">
+          <label class="text-xs font-medium text-slateDark-600">เรื่องที่ 1:</label>
+          <input type="text" id="editInputC1" maxlength="500" class="w-full text-xs p-2.5 border border-canvas-border rounded-xl">
+          <label class="text-xs font-medium text-slateDark-600">เรื่องที่ 2:</label>
+          <input type="text" id="editInputC2" maxlength="500" class="w-full text-xs p-2.5 border border-canvas-border rounded-xl">
+          <label class="text-xs font-medium text-slateDark-600">เรื่องที่ 3:</label>
+          <input type="text" id="editInputC3" maxlength="500" class="w-full text-xs p-2.5 border border-canvas-border rounded-xl">
+          <label class="text-xs font-medium text-slateDark-600">ความรู้สึก:</label>
+          <input type="text" id="editInputEmo" maxlength="500" class="w-full text-xs p-2.5 border border-canvas-border rounded-xl">
+        </div>
+        <div class="flex items-center space-x-2 pt-2">
+          <button onclick="saveSummaryEdits()" class="btn-press flex-1 min-h-[44px] py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold">บันทึกการแก้ไข</button>
+          <button onclick="closeEditSummaryModal()" class="btn-press min-h-[44px] px-4 py-2.5 rounded-xl bg-canvas-base border border-canvas-border text-xs font-medium text-slateDark-700">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= DELETE CONFIRMATION DIALOG ================= -->
+    <div id="deleteConfirmModal" class="fixed inset-0 z-50 bg-slateDark-900/60 backdrop-blur-xs flex items-center justify-center p-6 hidden">
+      <div class="w-full max-w-[330px] bg-white rounded-3xl p-6 text-center space-y-4 shadow-2xl border border-canvas-border fade-in">
+        <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+        <div class="space-y-1">
+          <h3 class="text-base font-bold text-slateDark-900">ยืนยันการลบรายการ?</h3>
+          <p class="text-xs text-slateDark-600" id="deleteItemPromptText">คุณกำลังจะลบรายการนี้ ข้อมูลจะถูกลบออกจากเครื่อง</p>
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button onclick="executeConfirmedDelete()" class="btn-press flex-1 min-h-[44px] py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold">ยืนยันลบ</button>
+          <button onclick="closeDeleteConfirmModal()" class="btn-press flex-1 min-h-[44px] py-2.5 rounded-xl bg-canvas-base border border-canvas-border text-xs font-medium text-slateDark-700">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= READ SUMMARY DETAILS MODAL ================= -->
+    <div id="readSummaryModal" class="fixed inset-0 z-50 bg-slateDark-900/60 backdrop-blur-xs flex items-end justify-center hidden" onclick="handleBackdropClick(event, 'readSummaryModal')">
+      <div class="w-full max-w-[390px] bg-white rounded-t-[32px] p-6 space-y-4 border-t border-canvas-border bottom-sheet-up">
+        <div class="w-12 h-1 bg-slateDark-200 rounded-full mx-auto"></div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-brand-700 uppercase tracking-wide">สรุปที่เก็บไว้</span>
+          <button onclick="closeReadSummaryModal()" class="text-slateDark-400 hover:text-slateDark-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="space-y-3" id="readSummaryBody">
+          <!-- Populated by JS -->
+        </div>
+        <button onclick="closeReadSummaryModal()" class="btn-press w-full min-h-[44px] py-2.5 rounded-xl bg-slateDark-800 text-white text-xs font-semibold">ปิด</button>
+      </div>
+    </div>
+
+
+  </div>
+
+  <script src="src/app.js"></script>
+
+
+
+
+</body></html>
